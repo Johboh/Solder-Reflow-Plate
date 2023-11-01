@@ -18,13 +18,13 @@
 // https://github.com/adafruit/Adafruit-MAX31855-library
 
 #define OTA_HTTP_PORT 81
-// Update at http://192.168.1.163:81/update
+// Update at http://10.20.1.133:81/update
 
 // WIFI/MQTT
 // credentials.h should define the following:
 // const char user_hostname[] = "";
 // const char user_wifi_ssid[] = "";
-// const char user_wifi_passsword[] = "";
+// const char user_wifi_password[] = "";
 // const char mqtt_host[] = "";
 // const char mqtt_username[] = "";
 // const char mqtt_password[] = "";
@@ -60,7 +60,7 @@ void setupSerial() {
 void setupWifi() {
   Serial.println("Setting up Wifi...");
   WiFi.mode(WIFI_STA);
-  WiFi.begin(user_wifi_ssid, user_wifi_passsword);
+  WiFi.begin(user_wifi_ssid, user_wifi_password);
   WiFi.setHostname(user_hostname);
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Rebooting...");
