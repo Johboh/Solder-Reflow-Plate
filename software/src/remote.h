@@ -6,8 +6,7 @@
 #include "Thermocouple.h"
 #include "Voltage.h"
 #include <Arduino.h>
-#include <PubSubClient.h>
-#include <WiFi.h>
+#include <MQTTRemote.h>
 
 /**
  * Handles all remote/external communication.
@@ -41,7 +40,6 @@ public:
 
 private:
   void publishHASetup();
-  bool mqttMaybeReconnect();
 
 private:
   Logger &_logger;
@@ -55,8 +53,8 @@ private:
   String _username;
   String _password;
 
-  WiFiClient _wifi_client;
-  PubSubClient _mqtt;
+  MQTTRemote _mqtt;
+  bool _was_connected = false;
   unsigned long _retry_to_connect_at_ms = 0;
 };
 
