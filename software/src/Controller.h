@@ -4,10 +4,12 @@
 #include "Heater.h"
 #include "Logger.h"
 #include "Profile.h"
+#include "ProfileStateHandler.h"
 #include "Profiles.h"
 #include "StatusLeds.h"
 #include "Thermocouple.h"
 #include "Voltage.h"
+#include <optional>
 
 /**
  * Main controller for this board and heatbead.
@@ -52,9 +54,10 @@ public:
   bool selectProfile(String &profile_name);
 
   /**
-   * @brief Get the selected proifle, or null if no proifle is seleted. Call [selectProfile] to select a profile.
+   * @brief Get the selected proifle, or std::nullopt if no proifle is seleted. Call [selectProfile] to select a
+   * profile.
    */
-  Profile *getSelectedProfile() { return _current_profile; }
+  std::optional<Profile> getSelectedProfile() { return _current_profile; }
 
   /**
    * @brief Start the selected heating profile. Will fail and return false if no profile has been selected. Use
@@ -96,8 +99,9 @@ private:
   Heater _heater;
 
 private:
-  Profile *_current_profile;
+  std::optional<Profile> _current_profile;
   Profiles _profiles;
+  ProfileStateHandler _profile_state_handler;
   State _current_state = State::NoProfileSelected;
 };
 

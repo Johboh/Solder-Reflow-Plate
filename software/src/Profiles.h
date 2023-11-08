@@ -4,6 +4,8 @@
 #include "Logger.h"
 #include "Profile.h"
 #include <Arduino.h>
+#include <optional>
+#include <vector>
 
 /**
  * Handle soldering profiles.
@@ -17,17 +19,23 @@ public:
 
 public:
   /**
-   * @brief Get a profile given its name. Will return nullptr if the profile cannot be found.
+   * @brief Get a profile given its name. Will return std::nullopt if the profile cannot be found.
    */
-  Profile *getProfile(String &name);
+  std::optional<Profile> getProfile(String &name);
+
   /**
    * @brief Get the total number of profiles.
    */
-  uint8_t getNumberOfProfiles() { return sizeof(_profiles) / sizeof(Profile); }
+  uint8_t getNumberOfProfiles() { return _profiles.size(); }
+
+  /**
+   * @brief Get name of available profiles.
+   */
+  std::vector<String> availableProfiles() const;
 
 private:
   Logger &_logger;
-  Profile _profiles[2];
+  std::vector<Profile> _profiles;
 };
 
 #endif //__PROFILES_H__

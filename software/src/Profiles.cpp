@@ -1,81 +1,78 @@
 #include "Profiles.h"
+#include "ProfileBuilder.h"
+#include "ProfileStepBuilder.h"
 
-Profile::Step sn42bi58_95x_preheat = {
-    .state = Profile::State::Preheat,
-    .target_temperature_c = 108,
-    .ramp_up_ms = 60000,
-    .total_runtime_ms = 80000,
-    .max_duty_cycle_percent = 0.85,
-    .aggressiveness = 12,
-};
+Profiles::Profiles(Logger &logger) : _logger(logger) {
+  Profile p0(ProfileBuilder("Sn42Bi58 80x60mm")
+                 .addStep(ProfileStepBuilder(Profile::State::Preheat)
+                              .setRampUpTime(60000)
+                              .setAggressiveness(14)
+                              .setTotalRuntime(80000)
+                              .setTargetTemperatureC(108)
+                              .setMaxDutyCyclePercent(0.5)
+                              .build())
+                 .addStep(ProfileStepBuilder(Profile::State::Soak)
+                              .setRampUpTime(40000)
+                              .setAggressiveness(8)
+                              .setTotalRuntime(80000)
+                              .setTargetTemperatureC(140)
+                              .setMaxDutyCyclePercent(0.6)
+                              .build())
+                 .addStep(ProfileStepBuilder(Profile::State::Reflow)
+                              .setRampUpTime(30000)
+                              .setAggressiveness(2)
+                              .setTotalRuntime(60000)
+                              .setTargetTemperatureC(175)
+                              .setMaxDutyCyclePercent(0.85)
+                              .build())
+                 .build());
 
-Profile::Step sn42bi58_95x_soak = {
-    .state = Profile::State::Soak,
-    .target_temperature_c = 140,
-    .ramp_up_ms = 40000,
-    .total_runtime_ms = 80000,
-    .max_duty_cycle_percent = 0.90,
-    .aggressiveness = 12,
-};
+  Profile p1(ProfileBuilder("Sn42Bi58 95x95mm")
+                 .addStep(ProfileStepBuilder(Profile::State::Preheat)
+                              .setRampUpTime(60000)
+                              .setAggressiveness(12)
+                              .setTotalRuntime(80000)
+                              .setTargetTemperatureC(108)
+                              .setMaxDutyCyclePercent(0.85)
+                              .build())
+                 .addStep(ProfileStepBuilder(Profile::State::Soak)
+                              .setRampUpTime(40000)
+                              .setAggressiveness(12)
+                              .setTotalRuntime(80000)
+                              .setTargetTemperatureC(140)
+                              .setMaxDutyCyclePercent(0.9)
+                              .build())
+                 .addStep(ProfileStepBuilder(Profile::State::Reflow)
+                              .setRampUpTime(20000)
+                              .setAggressiveness(10)
+                              .setTotalRuntime(40000)
+                              .setTargetTemperatureC(170)
+                              .setMaxDutyCyclePercent(1.0)
+                              .build())
+                 .build());
+  _profiles.push_back(p0);
+  _profiles.push_back(p1);
+}
 
-Profile::Step sn42bi58_95x_reflow = {
-    .state = Profile::State::Reflow,
-    .target_temperature_c = 170,
-    .ramp_up_ms = 20000,
-    .total_runtime_ms = 40000,
-    .max_duty_cycle_percent = 1.0,
-    .aggressiveness = 10,
-};
-
-String sn42bi58_95x_name = "Sn42Bi58 95x95mm";
-Profile::Step sn42bi58_95x_steps[] = {sn42bi58_95x_preheat, sn42bi58_95x_soak, sn42bi58_95x_reflow};
-
-Profile::Step sn42bi58_80x_preheat = {
-    .state = Profile::State::Preheat,
-    .target_temperature_c = 108,
-    .ramp_up_ms = 60000,
-    .total_runtime_ms = 80000,
-    .max_duty_cycle_percent = 0.50,
-    .aggressiveness = 14,
-};
-
-Profile::Step sn42bi58_80x_soak = {
-    .state = Profile::State::Soak,
-    .target_temperature_c = 140,
-    .ramp_up_ms = 40000,
-    .total_runtime_ms = 80000,
-    .max_duty_cycle_percent = 0.6,
-    .aggressiveness = 8,
-};
-
-Profile::Step sn42bi58_80x_reflow = {
-    .state = Profile::State::Reflow,
-    .target_temperature_c = 175,
-    .ramp_up_ms = 30000,
-    .total_runtime_ms = 60000,
-    .max_duty_cycle_percent = 0.85,
-    .aggressiveness = 2,
-};
-
-String sn42bi58_80x_name = "Sn42Bi58 80x60mm";
-Profile::Step sn42bi58_80x_steps[] = {sn42bi58_80x_preheat, sn42bi58_80x_soak, sn42bi58_80x_reflow};
-
-Profiles::Profiles(Logger &logger)
-    : _logger(logger),
-      _profiles({Profile(sn42bi58_95x_name, sn42bi58_95x_steps), Profile(sn42bi58_80x_name, sn42bi58_80x_steps)}) {}
-
-Profile *Profiles::getProfile(String &name) {
-  uint8_t number_of_profiles = getNumberOfProfiles();
-  _logger.log(Logger::Severity::Info, String("Number of profiles available: " + String(number_of_profiles)).c_str());
-  for (uint8_t i = 0; i < number_of_profiles; ++i) {
-    Profile *profile = &_profiles[i];
-    _logger.log(Logger::Severity::Info,
-                String("Profile at position " + String(i) + " is <" + profile->getName() + ">").c_str());
-    if (name == profile->getName()) {
-      _logger.log(Logger::Severity::Info, String("Found profile <" + String(name) + ">").c_str());
-      return profile;
-    }
+std::optional<Profile> Profiles::getProfile(String &name) {
+  auto is_profile = [&](Profile profile) { return profile.name == name; };
+  if (auto it = std::find_if(begin(_profiles), end(_profiles), is_profile); it != std::end(_profiles)) {
+    return *it;
+  } else {
+    _logger.log(Logger::Severity::Error,
+                String("Profile \"" + name +
+                       "\" could not be found in list of profiles. Number of profiles: " + String(_profiles.size()))
+                    .c_str());
+    return std::nullopt;
   }
-  _logger.log(Logger::Severity::Error, "Profile could not be found in list of profiles.");
-  return nullptr;
+}
+
+std::vector<String> Profiles::availableProfiles() const {
+  std::vector<String> profile_names;
+
+  for (const auto &profile : _profiles) {
+    profile_names.push_back(profile.name);
+  }
+
+  return profile_names;
 }

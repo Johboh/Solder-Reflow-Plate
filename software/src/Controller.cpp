@@ -17,8 +17,8 @@ void Controller::setup() {
 }
 
 void Controller::handle() {
-  if (_current_profile != nullptr) {
-    switch (_current_profile->getCurrentState()) {
+  if (_current_profile) {
+    switch (_profile_state_handler.getCurrentState()) {
     case Profile::State::Preheat:
       _current_state = State::Preheat;
       break;
@@ -34,10 +34,10 @@ void Controller::handle() {
     }
   }
 
-  if (inRunningState() && _current_profile != nullptr) {
-    float target_temperature = _current_profile->targetTemperature();
-    float max_duty_cycle = _current_profile->getMaxDutyCycle();
-    uint8_t aggressiveness = _current_profile->getAggressiveness();
+  if (inRunningState() && _current_profile) {
+    float target_temperature = _profile_state_handler.targetTemperature();
+    float max_duty_cycle = _profile_state_handler.getMaxDutyCycle();
+    uint8_t aggressiveness = _profile_state_handler.getAggressiveness();
     _heater.requestTemperature(target_temperature, max_duty_cycle, aggressiveness);
   } else {
     _heater.stop();
@@ -52,14 +52,15 @@ void Controller::handle() {
 }
 
 bool Controller::selectProfile(String &profile_name) {
-  _logger.log(Logger::Severity::Info, String("Trying to select profile <" + profile_name + ">").c_str());
+  _logger.log(Logger::Severity::Info, String("Trying to select profile \"" + profile_name + "\"").c_str());
   auto profile = _profiles.getProfile(profile_name);
-  if (profile != nullptr) {
+  if (profile) {
     _current_profile = profile;
-    _logger.log(Logger::Severity::Info, String("Profile <" + profile_name + "> selected.").c_str());
+    _profile_state_handler.setProfile(*profile);
+    _logger.log(Logger::Severity::Info, String("Profile \"" + profile_name + "\" selected.").c_str());
     return true;
   } else {
-    _logger.log(Logger::Severity::Error, String("Cannot select profile <" + profile_name + ">").c_str());
+    _logger.log(Logger::Severity::Error, String("Cannot select profile \"" + profile_name + "\"").c_str());
     _current_state = State::Error;
     return false;
   }
@@ -67,7 +68,7 @@ bool Controller::selectProfile(String &profile_name) {
 
 bool Controller::start() {
   _logger.log(Logger::Severity::Info, "Trying to start reflow.");
-  if (_current_profile != nullptr) {
+  if (_current_profile) {
     _current_state = State::Idle;
     auto temperature = _thermocouple.getBedTemperature();
     if (isnan(temperature)) {
@@ -75,7 +76,7 @@ bool Controller::start() {
       _current_state = State::Error;
       return false;
     } else {
-      _current_profile->start(_thermocouple.getBedTemperature());
+      _profile_state_handler.start(_thermocouple.getBedTemperature());
       _logger.log(Logger::Severity::Info, "Starting.");
     }
     _heater.start();
@@ -90,20 +91,20 @@ bool Controller::start() {
 void Controller::stop() {
   _current_state = State::Idle;
   _voltage.setDutyCyclePercent(0.0);
-  if (_current_profile != nullptr) {
-    _current_profile->reset();
+  if (_current_profile) {
+    _profile_state_handler.reset();
   }
   _heater.stop();
 }
 
 bool Controller::inRunningState() {
-  return _current_profile != nullptr &&
+  return _current_profile &&
          (_current_state == State::Preheat || _current_state == State::Soak || _current_state == State::Reflow);
 }
 
 uint16_t Controller::getTargetTemperature() {
-  if (_current_profile != nullptr) {
-    return _current_profile->targetTemperature();
+  if (_current_profile) {
+    return _profile_state_handler.targetTemperature();
   } else {
     return 0;
   }
@@ -127,9 +128,9 @@ void Controller::printDebug() {
   Serial.print("Current duty(%) = ");
   Serial.println(_voltage.getDutyCyclePercent() * 100.0);
 
-  if (_current_profile != nullptr) {
+  if (_current_profile) {
     Serial.print("Current target(C) = ");
-    Serial.println(_current_profile->targetTemperature());
+    Serial.println(_profile_state_handler.targetTemperature());
   } else {
     Serial.println("No current target");
   }

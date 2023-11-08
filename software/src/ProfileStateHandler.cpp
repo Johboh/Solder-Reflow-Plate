@@ -1,23 +1,28 @@
-#include "Profile.h"
+#include "ProfileStateHandler.h"
 
-Profile::Profile(String &name, Profile::Step steps[4]) : _name(name), _steps(steps) {}
+ProfileStateHandler::ProfileStateHandler() {}
 
-Profile::Step const *Profile::getStep(Profile::State state) {
-  for (uint8_t i = 0; i < NUMBER_OF_STEPS; ++i) {
-    if (_steps[i].state == state) {
-      return &_steps[i];
+std::optional<Profile::Step> ProfileStateHandler::getStep(Profile::State state) {
+  for (const auto &step : _profile.steps) {
+    if (step.state == state) {
+      return step;
     }
   }
-  return nullptr;
+  return std::nullopt;
 }
 
-void Profile::reset() {
+void ProfileStateHandler::reset() {
   _current_state = Profile::State::Idle;
   _k = 0;
   _m = 0;
 }
 
-void Profile::start(float idle_temperature) {
+void ProfileStateHandler::setProfile(Profile profile) {
+  _profile = profile;
+  reset();
+}
+
+void ProfileStateHandler::start(float idle_temperature) {
   auto now = millis();
   _start_time_ms = now;
   _step_start_time_ms = now;
@@ -26,9 +31,9 @@ void Profile::start(float idle_temperature) {
   calculateKM(idle_temperature);
 }
 
-uint16_t Profile::targetTemperature() {
+uint16_t ProfileStateHandler::targetTemperature() {
   auto step = getStep(_current_state);
-  if (step != nullptr) {
+  if (step) {
     unsigned long x = millis() - _step_start_time_ms;
 
     // Check if we reached end of step.
@@ -38,16 +43,16 @@ uint16_t Profile::targetTemperature() {
 
       Serial.print("runtime exceeded, switching current state: ");
       switch (_current_state) {
-      case State::Preheat:
-        _current_state = State::Soak;
+      case Profile::State::Preheat:
+        _current_state = Profile::State::Soak;
         Serial.println("Preheat -> Soak");
         break;
-      case State::Soak:
-        _current_state = State::Reflow;
+      case Profile::State::Soak:
+        _current_state = Profile::State::Reflow;
         Serial.println("Soak -> Reflow");
         break;
-      case State::Reflow:
-        _current_state = State::Idle;
+      case Profile::State::Reflow:
+        _current_state = Profile::State::Idle;
         Serial.println("Reflow -> Idle");
         break;
       default:
@@ -70,9 +75,9 @@ uint16_t Profile::targetTemperature() {
   }
 }
 
-float Profile::getMaxDutyCycle() {
+float ProfileStateHandler::getMaxDutyCycle() {
   auto step = getStep(_current_state);
-  if (step != nullptr) {
+  if (step) {
     float val = min(1.0f, step->max_duty_cycle_percent);
     val = max(0.0f, val);
     return val;
@@ -81,9 +86,9 @@ float Profile::getMaxDutyCycle() {
   }
 }
 
-uint8_t Profile::getAggressiveness() {
+uint8_t ProfileStateHandler::getAggressiveness() {
   auto step = getStep(_current_state);
-  if (step != nullptr) {
+  if (step) {
     uint8_t val = min((uint8_t)100, step->aggressiveness);
     val = max((uint8_t)1, step->aggressiveness);
     return val;
@@ -92,10 +97,10 @@ uint8_t Profile::getAggressiveness() {
   }
 }
 
-void Profile::calculateKM(float zero_time_temperature) {
+void ProfileStateHandler::calculateKM(float zero_time_temperature) {
   auto step = getStep(_current_state);
   // Linear equation calculation. Ramp up to set temperature during ramp up time.
-  if (step != nullptr && !isnan(zero_time_temperature)) {
+  if (step && !isnan(zero_time_temperature)) {
     _m = zero_time_temperature;
     _k = ((double)step->target_temperature_c - _m) / ((double)step->ramp_up_ms);
   } else {

@@ -261,8 +261,8 @@ void Remote::handle() {
     _mqtt.publishMessage("solder_reflow_plate/sensor/solder_reflow_plate_duty_cycle/state", strval);
 
     auto current_profile = _controller.getSelectedProfile();
-    if (current_profile != nullptr) {
-      _mqtt.publishMessage("solder_reflow_plate/select/solder_reflow_plate_profile/state", current_profile->getName());
+    if (current_profile) {
+      _mqtt.publishMessage("solder_reflow_plate/select/solder_reflow_plate_profile/state", current_profile->name);
     }
 
     switch (_controller.getCurrentState()) {
