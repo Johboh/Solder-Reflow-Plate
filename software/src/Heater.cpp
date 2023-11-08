@@ -1,4 +1,4 @@
-#include "heater.h"
+#include "Heater.h"
 
 #define EVALUATE_EVERY_MS 100
 
