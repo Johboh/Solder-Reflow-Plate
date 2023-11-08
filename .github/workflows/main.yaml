@@ -1,11 +1,10 @@
 name: PlatformIO CI
+
 on: [push]
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        main: [software/src/main.cpp]
 
     steps:
       - uses: actions/checkout@v3
@@ -21,7 +20,6 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
-      - name: Build PlatformIO main
-        run: pio ci --lib="." --board=lolin_s2_mini --board=lolin_c3_mini
-        env:
-          PLATFORMIO_CI_SRC: ${{ matrix.main }}
+      - name: Build PlatformIO Project
+        working-directory: ./software
+        run: pio run
