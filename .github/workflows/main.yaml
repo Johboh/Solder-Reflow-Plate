@@ -21,7 +21,8 @@ jobs:
         run: pip install --upgrade platformio
 
       - name: Add mock credentials
-        run: mv ./software/credentials.h.template ./software/credentials.h
+        working-directory: ./software/src
+        run: mv credentials.h.template credentials.h
 
       - name: Build PlatformIO Project
         working-directory: ./software
