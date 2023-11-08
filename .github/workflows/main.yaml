@@ -20,6 +20,9 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
+      - name: Add mock credentials
+        run: mv ./software/credentials.h.template ./software/credentials.h
+
       - name: Build PlatformIO Project
         working-directory: ./software
         run: pio run
