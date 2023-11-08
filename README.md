@@ -1,3 +1,5 @@
+[![Main](https://github.com/Johboh/Solder-Reflow-Plate/actions/workflows/main.yaml/badge.svg)](https://github.com/Johboh/Solder-Reflow-Plate/actions/workflows/main.yaml)
+
 # **Solder Reflow Plate - ESP32-S2 version with separate heatbed**
 
 Forked from [AfterEarthLTD/Solder-Reflow-Plate](https://github.com/AfterEarthLTD/Solder-Reflow-Plate)! See upsteam for original Readme.md and documentation!
